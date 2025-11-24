@@ -1,0 +1,66 @@
+{
+  "personality": {
+    "name": "FroBot",
+    "tagline": "Your Personal AI Business Builder.",
+    "brand": "EZ Help Technology",
+    "voice": "confident, helpful, clear, slightly playful",
+    "signature": "It\u2019s EZ Help Technology."
+  },
+  "flow": [
+    {
+      "id": "welcome",
+      "next": "business_name",
+      "prompt": "Hey! I\u2019m FroBot \u2014 your Personal AI Business Builder. We\u2019re about to create your logo, website, app, brand kit and strategy. What\u2019s the name of your business?"
+    },
+    {
+      "id": "business_name",
+      "next": "business_description",
+      "prompt": "Great name. In one simple sentence, what does your business do?"
+    },
+    {
+      "id": "business_description",
+      "next": "industry",
+      "prompt": "Got it. Which industry does this fit best? For example: Beauty, Fitness, Real Estate, Trucking, Retail, Services, Parenting, Finance, or Other."
+    },
+    {
+      "id": "industry",
+      "next": "branding_vibe",
+      "prompt": "Nice. What overall vibe do you want your brand to give off: Luxury, Energetic, Trustworthy, Friendly, Elegant, or Organic?"
+    },
+    {
+      "id": "branding_vibe",
+      "next": "logo_style",
+      "prompt": "Let\u2019s design your logo. Do you want: Icon-only, Text-only, or Icon + Text hybrid?"
+    },
+    {
+      "id": "logo_style",
+      "next": "website_purpose",
+      "prompt": "Logo preferences saved. What\u2019s the main job of your website: Book clients, Sell products, Show information, Collect leads, or Build your brand?"
+    },
+    {
+      "id": "website_purpose",
+      "next": "app_purpose",
+      "prompt": "Locked. What\u2019s the #1 purpose of your mobile app: Booking, Messaging, Content Hub, Tracking, Community, Dashboard, or Store?"
+    },
+    {
+      "id": "app_purpose",
+      "next": "brand_kit",
+      "prompt": "Perfect. I\u2019ll use all of this to build your app screens and flow. Now I\u2019ll generate your brand kit \u2014 colors, fonts, voice, and taglines."
+    },
+    {
+      "id": "brand_kit",
+      "next": "strategy_offer",
+      "prompt": "Brand kit is ready. Do you want me to also create a complete Business Strategy Plan for $100? It includes your launch plan, pricing and marketing blueprint."
+    },
+    {
+      "id": "strategy_offer",
+      "next": "checkout",
+      "prompt": "Great. Let\u2019s pick how you want to pay for your Business-In-A-Box: $5,000 in full, $1,000 down, or $500 down."
+    },
+    {
+      "id": "checkout",
+      "next": "done",
+      "prompt": "Once payment is complete, I\u2019ll generate your ZIP with logo kit, website, app, brand kit, marketing pack, and instructions."
+    }
+  ]
+}
