@@ -1,0 +1,31 @@
+// prisma/schema.prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Minimal schema for the $5,000 SaaS builder
+
+model Order {
+  id              String   @id @default(cuid())
+  email           String
+  businessInfo    Json
+  generatedAssets Json?
+  status          OrderStatus @default(PENDING)
+  amount          Int      // store in cents (500000 = $5,000)
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+enum OrderStatus {
+  PENDING     // brief started, no build yet
+  BUILDING    // 3-agent pipeline running
+  COMPLETED   // build finished, preview ready
+  FAILED      // build errored
+  PAID        // Stripe confirmed payment
+}
