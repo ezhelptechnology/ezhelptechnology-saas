@@ -1,118 +1,117 @@
 // frontend/app/api/chat/route.ts
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import Groq from "groq-sdk";
 
-const groqApiKey = process.env.GROQ_API_KEY;
-
-if (!groqApiKey) {
-  console.warn(
-    "[/api/chat] GROQ_API_KEY is not set in environment. FroBot will not work until it is."
-  );
-}
-
 const groq = new Groq({
-  apiKey: groqApiKey || "missing-key",
+  apiKey: process.env.GROQ_API_KEY,
 });
 
-const MODEL =
-  process.env.AI_MODEL_FROBOT ||
-  process.env.GROQ_MODEL ||
-  "llama-3.1-8b-instant";
+const MODEL = process.env.AI_MODEL_FROBOT || "llama-3.1-8b-instant";
 
-export async function POST(req: Request) {
+const SYSTEM_PROMPT = `You are FroBot, a friendly and professional AI assistant for EZ Help Technology.
+
+Your job is to have a natural conversation to gather business information. You should:
+1. Be warm, enthusiastic, and encouraging
+2. Ask follow-up questions if answers are vague
+3. Acknowledge each answer before moving to the next topic
+4. Keep responses concise (2-3 sentences max)
+
+Information to gather:
+- Business name
+- Industry and target customers  
+- Brand style preference (modern, minimal, luxury, playful, etc.)
+- Primary colors for branding
+- Email address for delivery
+
+After gathering all information, summarize what you learned and say you're ready to start building their package.`;
+
+type MessageRole = "system" | "user" | "assistant";
+
+interface ChatMessage {
+  role: MessageRole;
+  content: string;
+}
+
+export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-
-    /**
-     * We support BOTH:
-     *  - { message, history }  (what BuilderPage sends)
-     *  - { messages: [...] }   (older shape, just in case)
-     */
-
-    // 1) Get latest user message
-    let message: string = "";
-
-    if (typeof body?.message === "string") {
-      message = body.message.trim();
-    }
-
-    // Fallback: infer from body.messages (array of {role, content})
-    const rawMessages = Array.isArray(body?.messages) ? body.messages : [];
-    if (!message && rawMessages.length > 0) {
-      const lastUser = [...rawMessages]
-        .reverse()
-        .find((m: any) => m.role === "user" && m.content);
-      if (lastUser) {
-        message = String(lastUser.content).trim();
-      }
-    }
-
-    if (!message) {
+    
+    // Handle both formats: { message, conversationHistory } or { messages }
+    let messages: ChatMessage[] = [];
+    
+    if (body.messages && Array.isArray(body.messages)) {
+      // New format: array of messages
+      messages = body.messages.map((m: any) => ({
+        role: (m.role === "bot" ? "assistant" : m.role) as MessageRole,
+        content: String(m.content || ""),
+      }));
+    } else if (body.message) {
+      // Old format: single message with history
+      const history = body.conversationHistory || [];
+      messages = history.map((m: any) => ({
+        role: (m.role === "bot" ? "assistant" : m.role) as MessageRole,
+        content: String(m.content || ""),
+      }));
+      messages.push({
+        role: "user" as MessageRole,
+        content: String(body.message),
+      });
+    } else {
       return NextResponse.json(
-        { ok: false, error: "Message is required" },
+        { error: "Invalid request format" },
         { status: 400 }
       );
     }
 
-    // 2) Normalize history coming from BuilderPage (history) OR older messages shape
-    const historySource =
-      body?.history || body?.conversationHistory || body?.messages || [];
+    // Filter out any invalid messages
+    messages = messages.filter(
+      (m) => m.content && ["user", "assistant", "system"].includes(m.role)
+    );
 
-    const cleanedHistory = (Array.isArray(historySource) ? historySource : [])
-      .filter((msg: any) => msg && msg.content)
-      .map((msg: any) => ({
-        // map "bot" → "assistant" for Groq
-        role: msg.role === "user" ? "user" : "assistant",
-        content: String(msg.content),
-      }));
-
-    if (!groqApiKey) {
+    if (messages.length === 0) {
       return NextResponse.json(
-        {
-          ok: false,
-          error: "Server is missing GROQ_API_KEY env var",
-        },
-        { status: 500 }
+        { error: "No valid messages provided" },
+        { status: 400 }
       );
     }
 
+    // Build the messages array with proper typing
+    const chatMessages: Array<{
+      role: "system" | "user" | "assistant";
+      content: string;
+    }> = [
+      {
+        role: "system" as const,
+        content: SYSTEM_PROMPT,
+      },
+      ...messages.map((m) => ({
+        role: m.role as "system" | "user" | "assistant",
+        content: m.content,
+      })),
+    ];
+
     const completion = await groq.chat.completions.create({
       model: MODEL,
-      messages: [
-        {
-          role: "system",
-          content:
-            "You are FroBot, the AI design assistant for EZ Help Technology. " +
-            "Your job is to collect 5 key pieces of info, ONE question at a time:\n" +
-            "1) Business name\n2) Industry & target customers\n3) Brand style (modern, luxury, playful, etc.)\n" +
-            "4) Primary brand colors\n5) Email address for delivery\n\n" +
-            "Keep responses short (2–3 sentences), friendly, and always ask a follow-up until you have all 5.",
-        },
-        ...cleanedHistory,
-        // ensure the latest user message is included explicitly
-        { role: "user", content: message },
-      ],
-      max_tokens: 512,
+      messages: chatMessages,
       temperature: 0.7,
+      max_tokens: 1024,
     });
 
-    const answer = completion.choices?.[0]?.message?.content?.trim() || "";
+    const responseContent =
+      completion.choices[0]?.message?.content ||
+      "I apologize, I'm having trouble responding. Please try again.";
 
-    if (!answer) {
-      throw new Error("Empty response from Groq");
-    }
-
-    // 🔥 This shape matches what BuilderPage expects: { response }
-    return NextResponse.json({ ok: true, response: answer });
-  } catch (err: any) {
-    console.error("Groq /api/chat error:", err?.response?.data || err);
-
+    return NextResponse.json({
+      ok: true,
+      message: responseContent,
+      response: responseContent,
+    });
+  } catch (error: any) {
+    console.error("Chat API error:", error);
     return NextResponse.json(
       {
         ok: false,
-        error: "Groq chat failed",
-        response:
-          "I’m having trouble reaching the AI engine right now. Please try again in a moment.",
+        error: error.message || "Failed to process chat request",
       },
       { status: 500 }
     );
