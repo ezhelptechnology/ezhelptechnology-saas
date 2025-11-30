@@ -32,7 +32,7 @@ export async function runThreeAgentBuild(
 Create initial design concepts and return ONLY this JSON structure (no markdown, no backticks):
 {
   "logo": {
-    "concept": "detailed description of logo design",
+    "concept": "detailed description of logo design including shapes, layout, and visual elements",
     "primaryColor": "#hexcode",
     "secondaryColor": "#hexcode",
     "style": "modern/minimal/bold/etc"
@@ -50,14 +50,15 @@ Create initial design concepts and return ONLY this JSON structure (no markdown,
   },
   "voice": ["professional", "friendly", "innovative"],
   "socialTemplates": [
-    { "title": "Welcome Post", "idea": "..." },
-    { "title": "Value Post", "idea": "..." },
-    { "title": "Testimonial Post", "idea": "..." }
+    { "title": "Welcome Post", "idea": "specific post idea" },
+    { "title": "Value Post", "idea": "specific post idea" },
+    { "title": "Testimonial Post", "idea": "specific post idea" }
   ],
   "websitePages": [
-    { "name": "Home", "purpose": "..." },
-    { "name": "About", "purpose": "..." },
-    { "name": "Services", "purpose": "..." }
+    { "name": "Home", "purpose": "main landing with hero section" },
+    { "name": "About", "purpose": "company story and team" },
+    { "name": "Services", "purpose": "detailed service offerings" },
+    { "name": "Contact", "purpose": "contact form and info" }
   ]
 }`,
           },
@@ -74,33 +75,38 @@ Create initial design concepts and return ONLY this JSON structure (no markdown,
       console.log(`✅ Agent 1 complete`);
     } catch (e: any) {
       console.error("❌ Agent 1 failed:", e.message);
+      const userColors = businessInfo.colors || "blue and white";
+      const isPrimaryDark = userColors.toLowerCase().includes("black") || 
+                           userColors.toLowerCase().includes("dark") ||
+                           userColors.toLowerCase().includes("navy");
+      
       designAssets = {
         logo: {
-          concept: `A modern logo for ${businessInfo.name || "the business"}`,
-          primaryColor: "#3B82F6",
-          secondaryColor: "#1E40AF",
+          concept: `A ${businessInfo.style || "modern"} logo for ${businessInfo.name || "the business"} featuring clean typography and a distinctive icon that represents ${businessInfo.industry || "the industry"}. The design uses ${userColors} as the primary color scheme.`,
+          primaryColor: isPrimaryDark ? "#1E293B" : "#3B82F6",
+          secondaryColor: isPrimaryDark ? "#F59E0B" : "#1E40AF",
           style: businessInfo.style || "modern",
         },
         brandKit: {
           colors: {
-            primary: "#3B82F6",
-            secondary: "#1E40AF",
-            accent: "#F59E0B",
+            primary: isPrimaryDark ? "#1E293B" : "#3B82F6",
+            secondary: isPrimaryDark ? "#F59E0B" : "#1E40AF",
+            accent: "#22C55E",
           },
-          fonts: { heading: "Inter", body: "Open Sans" },
+          fonts: { heading: "Montserrat", body: "Open Sans" },
         },
         voice: ["professional", "friendly", "innovative"],
         socialTemplates: [
-          { title: "Welcome Post", idea: "Introduce your brand" },
-          { title: "Value Post", idea: "Share your expertise" },
-          { title: "Testimonial Post", idea: "Customer success story" },
+          { title: "Welcome Post", idea: `Introducing ${businessInfo.name} - your trusted partner for ${businessInfo.industry}` },
+          { title: "Value Post", idea: "Share expert tips and insights from your industry" },
+          { title: "Testimonial Post", idea: "Feature a satisfied customer's success story" },
         ],
         websitePages: [
-          { name: "Home", purpose: "Main landing page" },
-          { name: "About", purpose: "Company story" },
-          { name: "Services", purpose: "What you offer" },
+          { name: "Home", purpose: "Main landing page with hero and key offerings" },
+          { name: "About", purpose: "Company story, mission, and team" },
+          { name: "Services", purpose: "Detailed breakdown of services offered" },
+          { name: "Contact", purpose: "Contact form and location information" },
         ],
-        parseError: true,
         fallback: true,
       };
     }
@@ -115,20 +121,18 @@ Create initial design concepts and return ONLY this JSON structure (no markdown,
           {
             role: "system",
             content:
-              "You are Agent 2 - The Critic. Review designs and provide critique. Respond ONLY with valid JSON, no markdown, no explanation.",
+              "You are Agent 2 - The Critic. Review designs and provide constructive critique. Respond ONLY with valid JSON, no markdown, no explanation.",
           },
           {
             role: "user",
-            content: `Review these designs: ${JSON.stringify(
-              designAssets
-            )}
+            content: `Review these designs for ${businessInfo.name} in the ${businessInfo.industry} industry: ${JSON.stringify(designAssets)}
 
 Return ONLY this JSON (no markdown, no backticks):
 {
   "score": 8,
-  "strengths": ["strength 1", "strength 2", "strength 3"],
-  "weaknesses": ["weakness 1", "weakness 2"],
-  "improvements": ["specific improvement 1", "improvement 2"]
+  "strengths": ["specific strength 1", "specific strength 2", "specific strength 3"],
+  "weaknesses": ["specific weakness 1", "specific weakness 2"],
+  "improvements": ["actionable improvement 1", "actionable improvement 2", "actionable improvement 3"]
 }`,
           },
         ],
@@ -147,13 +151,19 @@ Return ONLY this JSON (no markdown, no backticks):
       critique = {
         score: 8,
         strengths: [
-          "Strong brand identity",
-          "Good color choices",
-          "Clear messaging",
+          "Strong brand identity that aligns with industry standards",
+          "Color palette creates good visual hierarchy",
+          "Clear and consistent messaging tone",
         ],
-        weaknesses: ["Could be more unique", "Consider accessibility"],
-        improvements: ["Add more contrast", "Expand social templates"],
-        parseError: true,
+        weaknesses: [
+          "Could incorporate more unique visual elements",
+          "Consider adding more accessibility features",
+        ],
+        improvements: [
+          "Add subtle gradients or textures for depth",
+          "Include more specific CTAs in website copy",
+          "Expand social media content variety",
+        ],
         fallback: true,
       };
     }
@@ -168,7 +178,7 @@ Return ONLY this JSON (no markdown, no backticks):
           {
             role: "system",
             content:
-              "You are Agent 3 - The Producer. Create final production-ready deliverables. Respond ONLY with valid JSON, no markdown, no explanation.",
+              "You are Agent 3 - The Producer. Create final production-ready deliverables based on designs and critique. Respond ONLY with valid JSON, no markdown, no explanation.",
           },
           {
             role: "user",
@@ -179,28 +189,30 @@ Business: ${JSON.stringify(businessInfo)}
 Create final deliverables. Return ONLY valid JSON (no markdown):
 {
   "logoFinal": {
-    "description": "final logo specifications",
-    "files": ["SVG", "PNG", "PDF"],
-    "colors": {"primary": "#hex", "secondary": "#hex"}
+    "description": "detailed final logo description with specific visual elements",
+    "files": ["SVG", "PNG", "PDF", "Favicon"],
+    "colors": {"primary": "#hex", "secondary": "#hex", "accent": "#hex"}
   },
   "brandGuidelines": {
-    "colorUsage": "...",
-    "typography": "...",
-    "dos": ["...", "..."],
-    "donts": ["...", "..."]
+    "colorUsage": "specific guidance on when to use each color",
+    "typography": "font pairing rules and sizes",
+    "dos": ["do 1", "do 2", "do 3"],
+    "donts": ["dont 1", "dont 2", "dont 3"]
   },
   "socialCalendar": [
-    {"day": 1, "platform": "Instagram", "post": "caption idea", "bestTime": "9am"},
-    {"day": 2, "platform": "LinkedIn", "post": "caption idea", "bestTime": "12pm"},
-    {"day": 3, "platform": "Twitter", "post": "caption idea", "bestTime": "10am"}
+    {"day": 1, "platform": "Instagram", "post": "specific post caption", "bestTime": "9am"},
+    {"day": 2, "platform": "LinkedIn", "post": "specific post caption", "bestTime": "12pm"},
+    {"day": 3, "platform": "Twitter", "post": "specific post caption", "bestTime": "10am"},
+    {"day": 4, "platform": "Facebook", "post": "specific post caption", "bestTime": "2pm"},
+    {"day": 5, "platform": "Instagram", "post": "specific post caption", "bestTime": "6pm"}
   ],
   "websiteCopy": {
-    "home": {"headline": "...", "subheadline": "...", "cta": "..."},
-    "about": {"headline": "...", "story": "..."},
-    "services": {"headline": "...", "features": ["feature1", "feature2", "feature3"]}
+    "home": {"headline": "compelling headline", "subheadline": "supporting text", "cta": "action button text"},
+    "about": {"headline": "about headline", "story": "2-3 sentence company story"},
+    "services": {"headline": "services headline", "features": ["feature 1", "feature 2", "feature 3", "feature 4"]}
   },
-  "clientPortalFeatures": ["feature 1", "feature 2", "feature 3"],
-  "adminDashboardFeatures": ["feature 1", "feature 2", "feature 3"]
+  "clientPortalFeatures": ["Dashboard overview", "Project tracking", "File sharing", "Messaging", "Invoice history"],
+  "adminDashboardFeatures": ["User management", "Analytics dashboard", "Content management", "Order processing", "Settings"]
 }`,
           },
         ],
@@ -216,84 +228,75 @@ Create final deliverables. Return ONLY valid JSON (no markdown):
       console.log(`✅ Agent 3 complete`);
     } catch (e: any) {
       console.error("❌ Agent 3 failed:", e.message);
+      const colors = designAssets.brandKit?.colors || {
+        primary: "#3B82F6",
+        secondary: "#1E40AF",
+        accent: "#F59E0B",
+      };
+      
       finalAssets = {
         logoFinal: {
-          description: `Professional logo for ${businessInfo.name}`,
-          files: ["SVG", "PNG", "PDF"],
-          colors:
-            designAssets.brandKit?.colors || {
-              primary: "#3B82F6",
-              secondary: "#1E40AF",
-            },
+          description: `Professional ${businessInfo.style || "modern"} logo for ${businessInfo.name} featuring clean typography and a distinctive brand mark that represents excellence in ${businessInfo.industry || "the industry"}.`,
+          files: ["SVG", "PNG", "PDF", "Favicon"],
+          colors: colors,
         },
         brandGuidelines: {
-          colorUsage:
-            "Use primary color for headers, secondary for accents, accent for buttons.",
-          typography:
-            "Use heading font for titles, body font for paragraphs and UI.",
-          dos: ["Be consistent", "Use brand colors", "Keep it professional"],
+          colorUsage: `Use ${colors.primary} for primary elements and headers. Use ${colors.secondary} for secondary elements and backgrounds. Use ${colors.accent} for CTAs and highlights.`,
+          typography: "Use Montserrat for headings (Bold, 24-48px). Use Open Sans for body text (Regular, 14-18px). Maintain consistent line height of 1.5.",
+          dos: [
+            "Maintain consistent spacing around logo",
+            "Use approved color combinations",
+            "Keep messaging professional and friendly",
+          ],
           donts: [
-            "Don't stretch logo",
-            "Don't change colors",
-            "Don't use low-res images",
+            "Don't stretch or distort the logo",
+            "Don't use unapproved color variations",
+            "Don't place logo on busy backgrounds",
           ],
         },
         socialCalendar: [
-          {
-            day: 1,
-            platform: "Instagram",
-            post: "Welcome to our page!",
-            bestTime: "9am",
-          },
-          {
-            day: 2,
-            platform: "LinkedIn",
-            post: "Excited to share our services.",
-            bestTime: "12pm",
-          },
-          {
-            day: 3,
-            platform: "Twitter",
-            post: "Follow us for updates.",
-            bestTime: "10am",
-          },
+          { day: 1, platform: "Instagram", post: `🚀 Welcome to ${businessInfo.name}! We're excited to connect with you.`, bestTime: "9am" },
+          { day: 2, platform: "LinkedIn", post: `Proud to introduce ${businessInfo.name}. We're dedicated to excellence in ${businessInfo.industry}.`, bestTime: "12pm" },
+          { day: 3, platform: "Twitter", post: `New here! ${businessInfo.name} is ready to serve you. Stay tuned!`, bestTime: "10am" },
+          { day: 4, platform: "Facebook", post: `At ${businessInfo.name}, your success is our priority. Share this post!`, bestTime: "2pm" },
+          { day: 5, platform: "Instagram", post: `Behind the scenes at ${businessInfo.name}! 💼✨`, bestTime: "6pm" },
         ],
         websiteCopy: {
           home: {
             headline: `Welcome to ${businessInfo.name}`,
-            subheadline: "Your trusted partner",
-            cta: "Get Started",
+            subheadline: `Your trusted partner for ${businessInfo.industry || "professional services"}.`,
+            cta: "Get Started Today",
           },
           about: {
             headline: "Our Story",
-            story: "We're passionate about helping businesses succeed.",
+            story: `${businessInfo.name} was founded to provide outstanding ${businessInfo.industry || "services"} that exceed expectations.`,
           },
           services: {
             headline: "What We Offer",
-            features: ["Service 1", "Service 2", "Service 3"],
+            features: ["Professional consultation", "Custom solutions", "Dedicated support", "Results-driven approach"],
           },
         },
-        clientPortalFeatures: ["Dashboard", "Project tracking", "Messaging"],
-        adminDashboardFeatures: ["User management", "Analytics", "Settings"],
-        parseError: true,
+        clientPortalFeatures: ["Dashboard overview", "Project tracking", "File sharing", "Messaging", "Invoice history"],
+        adminDashboardFeatures: ["User management", "Analytics dashboard", "Content management", "Order processing", "Settings"],
         fallback: true,
       };
     }
 
     // ========== FAL: LOGO IMAGE GENERATION ==========
-    console.log("🖼  Generating logo image with FAL...");
-    const logoPrompt =
-      finalAssets?.logoFinal?.description ||
-      designAssets?.logo?.concept ||
-      `${businessInfo.style || "modern"} logo for ${
-        businessInfo.name || "this business"
-      } in ${businessInfo.colors || "brand colors"}`;
-
-    const logoImageUrl = await generateLogoImage(logoPrompt);
-    if (logoImageUrl) {
-      console.log("✅ Logo image generated:", logoImageUrl);
-    } else {
-      console.warn("⚠️ Logo image URL is null (FAL may not be configured).");
+    console.log("🖼️ Generating logo image with FAL...");
+    
+    const logoPrompt = `${businessInfo.style || "modern"} ${businessInfo.industry || "business"} logo for "${businessInfo.name}", ${businessInfo.colors || "professional colors"}, ${designAssets?.logo?.concept || "clean minimal design"}`;
+    
+    let logoImageUrl: string | null = null;
+    try {
+      logoImageUrl = await generateLogoImage(logoPrompt);
+      if (logoImageUrl) {
+        console.log("✅ Logo image generated:", logoImageUrl);
+      } else {
+        console.warn("⚠️ Logo image URL is null (FAL may not be configured)");
+      }
+    } catch (falError: any) {
+      console.error("❌ FAL logo generation failed:", falError.message);
     }
 
     // ========== COMBINE EVERYTHING ==========
@@ -308,7 +311,7 @@ Create final deliverables. Return ONLY valid JSON (no markdown):
       models: {
         frobot: process.env.AI_MODEL_FROBOT || "llama-3.1-8b-instant",
         agent: agentModel,
-        falModel: process.env.FAL_LOGO_MODEL || "fal-ai/flux/dev",
+        fal: process.env.FAL_LOGO_MODEL || "fal-ai/flux/schnell",
       },
     };
 
@@ -320,18 +323,10 @@ Create final deliverables. Return ONLY valid JSON (no markdown):
   }
 }
 
-// FroBot Chat Handler (legacy, not used directly by /api/chat now)
 export async function getFroBotResponse(message: string, history: any[]) {
   try {
-    console.log("🤖 FroBot called with message:", message);
-
     const transformedHistory = history.map((msg: any) => ({
-      role:
-        msg.role === "bot"
-          ? "assistant"
-          : msg.role === "user"
-          ? "user"
-          : "system",
+      role: msg.role === "bot" ? "assistant" : msg.role === "user" ? "user" : "system",
       content: msg.content,
     }));
 
@@ -339,21 +334,7 @@ export async function getFroBotResponse(message: string, history: any[]) {
       [
         {
           role: "system",
-          content: `You are FroBot, a friendly AI assistant for EZ Help Technology.
-
-Your job: Gather business information through conversation.
-Ask about:
-1. Business name
-2. Industry and target customers
-3. Brand style preference (modern, professional, creative, etc.)
-4. Primary color preference
-5. Email address
-
-Rules:
-- Ask ONE question at a time
-- Keep responses brief and conversational (2-3 sentences max)
-- Be enthusiastic but professional
-- After getting all 5 pieces of info, say you're ready to start building`,
+          content: `You are FroBot, a friendly AI assistant for EZ Help Technology. Gather business information through conversation. Ask ONE question at a time. Be brief and professional.`,
         },
         ...transformedHistory,
         { role: "user", content: message },
