@@ -1,6 +1,6 @@
 // lib/ai.ts - Universal AI Client (Groq-focused)
 
-type AIProvider = 'groq' | 'anthropic' | 'together' | 'ollama';
+type AIProvider = 'groq' | 'anthropic' | 'together' | 'ollama' | 'pollinations';
 
 interface AIMessage {
   role: 'user' | 'assistant' | 'system';
@@ -19,8 +19,15 @@ class UniversalAI {
   private provider: AIProvider;
 
   constructor() {
-    // Default to Groq (free tier)
+    // Default to Groq (free tier) or Pollinations (totally free)
     this.provider = (process.env.AI_PROVIDER as AIProvider) || 'groq';
+
+    // Auto-detect fallback if Groq key is missing
+    if (this.provider === 'groq' && !process.env.GROQ_API_KEY) {
+      console.log('⚠️ No GROQ_API_KEY found. Falling back to Pollinations.ai (Free)');
+      this.provider = 'pollinations';
+    }
+
     console.log(`🤖 AI Provider initialized: ${this.provider}`);
   }
 
@@ -34,6 +41,8 @@ class UniversalAI {
         return this.callTogether(messages, model);
       case 'ollama':
         return this.callOllama(messages, model);
+      case 'pollinations':
+        return this.callPollinations(messages, model);
       default:
         // Fallback to Groq
         return this.callGroq(messages, model);
@@ -45,7 +54,8 @@ class UniversalAI {
     const apiModel = model || process.env.AI_MODEL_AGENT || 'llama-3.1-8b-instant';
 
     if (!process.env.GROQ_API_KEY) {
-      throw new Error('GROQ_API_KEY is not set. Add it to your .env.local file.');
+      console.warn('⚠️ GROQ_API_KEY missing at runtime. Switching to Pollinations.');
+      return this.callPollinations(messages, model);
     }
 
     console.log(`📤 Calling Groq with model: ${apiModel}`);
@@ -204,6 +214,48 @@ class UniversalAI {
         output_tokens: data.eval_count || 0,
       },
     };
+  }
+
+  // -------- POLLINATIONS.AI (Free Backend) --------
+  private async callPollinations(messages: AIMessage[], model?: string): Promise<AIResponse> {
+    const apiModel = model || 'openai'; // Pollinations uses 'openai' to mimic GPT
+
+    console.log(`🌸 Calling Pollinations.ai (Free)...`);
+
+    // Pollinations text API: https://text.pollinations.ai/openai
+    const response = await fetch('https://text.pollinations.ai/openai', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: apiModel,
+        messages: messages.map((m) => ({
+          role: m.role,
+          content: m.content,
+        })),
+        temperature: 0.7,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Pollinations error:', errorText);
+      throw new Error(`Pollinations request failed: ${response.status}`);
+    }
+
+    try {
+      const data = await response.json();
+      return {
+        content: data.choices?.[0]?.message?.content || "",
+        usage: {
+          input_tokens: data.usage?.prompt_tokens || 0,
+          output_tokens: data.usage?.completion_tokens || 0,
+        }
+      };
+    } catch (e) {
+      throw e;
+    }
   }
 }
 
